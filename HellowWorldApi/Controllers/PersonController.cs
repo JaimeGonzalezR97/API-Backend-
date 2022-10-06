@@ -3,6 +3,7 @@ using HellowWorldApi.Data.Entities;
 using HellowWorldApi.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Text.Json;
 
 namespace HellowWorldApi.Controllers
@@ -25,44 +26,79 @@ namespace HellowWorldApi.Controllers
             Estatura = 1.80
         };
 
-        [HttpGet("personHellowWorld")]
+        [HttpGet]
         public async Task<List<Person>> get()
         {
             return await _libraryDbContext.Persons.ToListAsync();
         }
 
+        [HttpGet]
+        [Route("{id}")]
+        public async Task<PersonResponse> getById([FromRoute] int id)
+        {
+            Person personFromDb = await _libraryDbContext.Persons.FindAsync(id);
+            if (personFromDb != null)
+            {
+                return new PersonResponse()
+                {
+                    Status = 200,
+                    Message = "This person has been successfully retrieved",
+                    Data = personFromDb
+                };
+            }
+            else
+            {
+                return new PersonResponse()
+                {
+                    Status = 400,
+                    Message = "This person does not exist"
+                };
+            }
+            
+        }
+
+
         [HttpPost]
-        public PersonResponse post([FromBody] Person person)
-        { 
-            _libraryDbContext.Persons.Add(person);
-            _libraryDbContext.SaveChanges();
+        public async Task<PersonResponse> post([FromBody] PersonDto personDto)
+        {
+            Person person = new Person()
+            {
+                Name = personDto.Name,
+                Speak = personDto.Speak,
+                Edad = personDto.Edad,
+                Estatura = personDto.Estatura,
+            };
+            await _libraryDbContext.Persons.AddAsync(person);
+            await _libraryDbContext.SaveChangesAsync();
             Console.WriteLine(person.Name);
           
-            return  new PersonResponse()
+            return new PersonResponse()
             {
                 Status = 200,
-                Message = JsonSerializer.Serialize<Person>(person) 
+                Message = "This person has been successfully saved",
+                Data = person
             };
         }
 
         [HttpPut]
         [Route("{id}")]
-        public PersonResponse put([FromRoute] int id, [FromBody] Person person)
+        public async Task<PersonResponse> put([FromRoute] int id, [FromBody] PersonDto personDto)
         {
-            var modify = _libraryDbContext.Persons.Find(id);
-            if (modify != null) 
+            Person personFromDb = await _libraryDbContext.Persons.FindAsync(id);
+            if (personFromDb != null) 
             {
-                modify.Name = person.Name;
-                modify.Speak = person.Speak;
-                modify.Estatura = person.Estatura;
-                modify.Edad = person.Edad;
-                _libraryDbContext.Entry(modify).State = EntityState.Modified;
-                _libraryDbContext.SaveChanges();
+                personFromDb.Name = personDto.Name;
+                personFromDb.Speak = personDto.Speak;
+                personFromDb.Estatura = personDto.Estatura;
+                personFromDb.Edad = personDto.Edad;
+                _libraryDbContext.Entry(personFromDb).State = EntityState.Modified;
+                await _libraryDbContext.SaveChangesAsync();
 
                 return new PersonResponse()
                 {
                     Status = 200,
-                    Message = JsonSerializer.Serialize<Person>(person) //cambiar a objeto
+                    Message = $"This person with id {id} was successfully changed",
+                    Data = personFromDb
                 };
             }
             else
@@ -77,37 +113,47 @@ namespace HellowWorldApi.Controllers
 
         [HttpPatch]
         [Route("{id}")]
-        public PersonResponse patch([FromRoute] int id, [FromBody] string speak)
+        public async Task<PersonResponse> patch([FromRoute] int id, [FromBody] PersonPatchDto personPatchDto)
         {// recibir array de propiedades a modificar 
-            people.Add(jaime);
-            people.Add(jaime);
-            people.Add(jaime);
-            Console.WriteLine($"{people[id].Speak}, this is the property from the id");
+            Person personFromDb = await _libraryDbContext.Persons.FindAsync(id);
 
-            people[id].Speak = speak;
-
-            Console.WriteLine($"{people[id].Speak}, this is the  property that was updated from the id");
-
-            return new PersonResponse()
+            if(personFromDb != null)
             {
-                Status = 200,
-                Message = JsonSerializer.Serialize<PersonDto>(people[id])
-            };
+                personFromDb.Name = personPatchDto.Name;
+                personFromDb.Speak = personPatchDto.Speak;
+                _libraryDbContext.Entry(personFromDb).State = EntityState.Modified;
+                await _libraryDbContext.SaveChangesAsync();
+
+                return new PersonResponse
+                {
+                    Status = 200,
+                    Message = $"Person with id {id} succesfully change",
+                    Data = personFromDb
+                };
+            }
+            else
+            {
+                return new PersonResponse
+                {
+                    Status = 400,
+                    Message = $"Person with id {id} does not exist"
+                };
+            }
         }
 
         [HttpDelete]
         [Route("{id}")]
-        public PersonResponse delete([FromRoute] int id)
+        public async Task<PersonResponse> delete([FromRoute] int id)
         {
-            var deleted = _libraryDbContext.Persons.Find(id);
+            Person deleted = await _libraryDbContext.Persons.FindAsync(id);
             if (deleted != null)
             {
                 //people[id] = null;
                 _libraryDbContext.Persons.Remove(deleted);
-                _libraryDbContext.SaveChanges();
+                await _libraryDbContext.SaveChangesAsync();
                 return new PersonResponse
                 {
-                    Status=200,
+                    Status = 200,
                     Message = $"Person with id {id} successfully deleted"
                 };
             }
