@@ -47,35 +47,32 @@ namespace HellowWorldApi.Controllers
 
         [HttpPut]
         [Route("{id}")]
-        public PersonResponse put([FromRoute] int id, [FromBody] PersonDto person)
+        public PersonResponse put([FromRoute] int id, [FromBody] Person person)
         {
-            people.Add(jaime);
-            people.Add(jaime);
-            people.Add(jaime);
-            PersonDto personFromId = people[id];
-            Console.WriteLine($"{personFromId.Speak},{personFromId.Name},{personFromId.Edad},{personFromId.Estatura} this is the person from the id");
-
-            personFromId = new PersonDto()
+            var modify = _libraryDbContext.Persons.Find(id);
+            if (modify != null) 
             {
-                Speak = person.Speak,
-                Name = person.Name,
-                Edad = person.Edad,
-                Estatura = person.Estatura
-            };
+                modify.Name = person.Name;
+                modify.Speak = person.Speak;
+                modify.Estatura = person.Estatura;
+                modify.Edad = person.Edad;
+                _libraryDbContext.Entry(modify).State = EntityState.Modified;
+                _libraryDbContext.SaveChanges();
 
-            people[id] = personFromId;
-
-            foreach (var person1 in people)
-            {
-
-                Console.WriteLine($"{person1.Speak},{person1.Name},{person1.Edad},{person1.Estatura} these are the people from the array");
+                return new PersonResponse()
+                {
+                    Status = 200,
+                    Message = JsonSerializer.Serialize<Person>(person) //cambiar a objeto
+                };
             }
-
-            return new PersonResponse()
+            else
             {
-                Status = 200,
-                Message = JsonSerializer.Serialize<PersonDto>(personFromId) //cambiar a objeto
-            };
+                return new PersonResponse
+                {
+                    Status = 400,
+                    Message = $"Person with id {id} does not exist"
+                };
+            }
         }
 
         [HttpPatch]
@@ -102,13 +99,12 @@ namespace HellowWorldApi.Controllers
         [Route("{id}")]
         public PersonResponse delete([FromRoute] int id)
         {
-            people.Add(jaime);
-            people.Add(jaime);
-            people.Add(jaime);
-            if (people[id] != null)
+            var deleted = _libraryDbContext.Persons.Find(id);
+            if (deleted != null)
             {
                 //people[id] = null;
-                people.Remove(people[id]);
+                _libraryDbContext.Persons.Remove(deleted);
+                _libraryDbContext.SaveChanges();
                 return new PersonResponse
                 {
                     Status=200,
