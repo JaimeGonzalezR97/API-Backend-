@@ -32,17 +32,16 @@ namespace HellowWorldApi.Controllers
         }
 
         [HttpPost]
-        public PersonResponse post([FromBody] PersonDto person)
+        public PersonResponse post([FromBody] Person person)
         { 
-
-            PersonDto person1 = new PersonDto();
-            person1 = person;
-            Console.WriteLine(person1.Edad);
-            people.Add(person1);
-            return new PersonResponse()
+            _libraryDbContext.Persons.Add(person);
+            _libraryDbContext.SaveChanges();
+            Console.WriteLine(person.Name);
+          
+            return  new PersonResponse()
             {
                 Status = 200,
-                Message = JsonSerializer.Serialize<PersonDto>(person1) 
+                Message = JsonSerializer.Serialize<Person>(person) 
             };
         }
 
