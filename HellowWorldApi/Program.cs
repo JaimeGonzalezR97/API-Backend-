@@ -13,7 +13,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: "open",
         policy =>
         {
-            policy.WithOrigins("https://joinentre.com")
+            policy.WithOrigins("*")
                     .WithMethods("PUT", "POST", "PATCH", "DELETE", "GET");
         });
 });
